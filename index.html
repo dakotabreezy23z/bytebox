@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>bytebox</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e1117;
+    --surface: #161b27;
+    --surface2: #1c2333;
+    --border: #2a3146;
+    --border2: #374160;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --accent: #4f8ef7;
+    --accent-light: rgba(79,142,247,0.12);
+    --accent-border: rgba(79,142,247,0.3);
+    --green: #34d399;
+    --green-light: rgba(52,211,153,0.1);
+    --green-border: rgba(52,211,153,0.3);
+    --red: #f87171;
+    --red-light: rgba(248,113,113,0.1);
+    --red-border: rgba(248,113,113,0.3);
+    --orange: #fb923c;
+    --orange-light: rgba(251,146,60,0.1);
+    --orange-border: rgba(251,146,60,0.3);
+    --purple: #a78bfa;
+    --purple-light: rgba(167,139,250,0.1);
+    --purple-border: rgba(167,139,250,0.3);
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    font-size: 15px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-family: var(--mono);
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+  .logo-dot { color: var(--accent); }
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--sans);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+  .status-dot.loading { background: var(--orange); animation: none; }
+  .status-dot.error { background: var(--red); animation: none; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 0 16px;
+    gap: 2px;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex-shrink: 0;
+    padding: 11px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-family: var(--sans);
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── EDITOR SCREEN ── */
+  .editor-wrap {
+    padding: 14px 16px;
+  }
+
+  .snippet-bar {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-bottom: 12px;
+    padding-bottom: 2px;
+  }
+  .snippet-bar::-webkit-scrollbar { display: none; }
+  .snippet-chip {
+    flex-shrink: 0;
+    font-size: 12px;
+    font-family: var(--sans);
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .snippet-chip:active { transform: scale(0.97); }
+  .snippet-chip.active-chip {
+    background: var(--accent-light);
+    border-color: var(--accent-border);
+    color: var(--accent);
+  }
+
+  .editor-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .editor-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .editor-filename {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .editor-actions { display: flex; gap: 6px; }
+  .icon-btn {
+    padding: 5px 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: var(--sans);
+    transition: all 0.15s;
+  }
+  .icon-btn:active { transform: scale(0.96); }
+
+  .editor-body {
+    display: flex;
+    background: var(--surface);
+    min-height: 220px;
+    overflow: hidden;
+  }
+  .line-numbers {
+    padding: 14px 10px 14px 12px;
+    font-family: var(--mono);
+    font-size: 13.5px;
+    line-height: 1.75;
+    color: var(--muted);
+    text-align: right;
+    user-select: none;
+    background: var(--surface2);
+    border-right: 1px solid var(--border);
+    min-width: 40px;
+    white-space: pre;
+    overflow: hidden;
+  }
+  .code-area {
+    flex: 1;
+    min-height: 220px;
+    padding: 14px 14px 14px 12px;
+    font-family: var(--mono);
+    font-size: 13.5px;
+    line-height: 1.75;
+    border: none;
+    outline: none;
+    background: var(--surface);
+    color: var(--text);
+    resize: vertical;
+    -webkit-overflow-scrolling: touch;
+    tab-size: 4;
+    white-space: pre;
+    overflow-wrap: normal;
+    overflow-x: auto;
+  }
+
+  .run-bar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .run-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 13px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .run-btn:active { transform: scale(0.98); opacity: 0.9; }
+  .run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .clear-btn {
+    padding: 13px 16px;
+    background: var(--surface);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .clear-btn:active { transform: scale(0.97); }
+
+  /* ── OUTPUT ── */
+  .output-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .output-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .output-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-family: var(--sans);
+  }
+  .output-time {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+  .output-body {
+    padding: 14px;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.8;
+    min-height: 80px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text);
+  }
+  .output-body.empty { color: var(--muted); font-family: var(--sans); font-size: 14px; }
+  .output-body.error-out { color: var(--red); }
+  .output-body.success-out { }
+  .output-border-success { border-top: 2px solid var(--green); }
+  .output-border-error { border-top: 2px solid var(--red); }
+  .output-border-default { border-top: 2px solid transparent; }
+
+  /* ── SNIPPETS SCREEN ── */
+  .list-wrap { padding: 14px 16px; }
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 10px;
+    font-family: var(--sans);
+  }
+  .snippet-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .snippet-card:active { border-color: var(--accent); }
+  .snippet-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .snippet-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .snippet-tag {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-family: var(--sans);
+  }
+  .tag-green { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
+  .tag-blue { background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent-border); }
+  .tag-purple { background: var(--purple-light); color: var(--purple); border: 1px solid var(--purple-border); }
+  .tag-orange { background: var(--orange-light); color: var(--orange); border: 1px solid var(--orange-border); }
+  .snippet-preview {
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+    background: var(--surface2);
+  }
+  .snippet-open-btn {
+    display: block;
+    width: calc(100% - 28px);
+    margin: 10px 14px;
+    padding: 9px;
+    text-align: center;
+    background: var(--accent-light);
+    color: var(--accent);
+    border: 1px solid var(--accent-border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--sans);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .snippet-open-btn:active { transform: scale(0.98); }
+
+  /* ── CHALLENGES SCREEN ── */
+  .challenge-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .challenge-header {
+    padding: 14px 14px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .challenge-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .challenge-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .challenge-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .challenge-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .difficulty {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-family: var(--sans);
+  }
+  .diff-easy { color: var(--green); }
+  .diff-medium { color: var(--orange); }
+  .diff-hard { color: var(--red); }
+  .try-btn {
+    padding: 7px 14px;
+    background: var(--text);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--sans);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .try-btn:active { transform: scale(0.97); }
+
+  /* ── LOADING SPINNER ── */
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── MISC ── */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .empty-state .big { font-size: 36px; margin-bottom: 10px; }
+
+  input[type="text"] {
+    width: 100%;
+    padding: 11px 13px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: var(--sans);
+    font-size: 14px;
+    background: var(--surface);
+    color: var(--text);
+    outline: none;
+    margin-bottom: 10px;
+  }
+  input[type="text"]:focus { border-color: var(--accent); }
+
+  .save-snippet-area {
+    padding: 12px 14px;
+    border-top: 1px solid var(--border);
+    background: var(--surface2);
+    display: none;
+  }
+  .save-snippet-area.visible { display: block; }
+
+  /* ── PUZZLES ── */
+  .puzzle-wrap { padding: 14px 16px; }
+  .puzzle-progress-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .puzzle-score { font-size: 13px; font-weight: 600; color: var(--green); font-family: var(--sans); }
+  .puzzle-counter { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+  .puzzle-track { height: 3px; background: var(--border); border-radius: 2px; margin-bottom: 16px; overflow: hidden; }
+  .puzzle-fill { height: 100%; background: linear-gradient(90deg, var(--green), var(--accent)); border-radius: 2px; transition: width 0.4s ease; }
+  .puzzle-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; }
+  .puzzle-header { padding: 12px 14px; border-bottom: 1px solid var(--border); background: var(--surface2); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .puzzle-title-row { flex: 1; }
+  .puzzle-num { font-size: 10px; font-family: var(--mono); color: var(--muted); margin-bottom: 3px; }
+  .puzzle-title { font-size: 15px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .puzzle-diff { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; padding: 3px 9px; border-radius: 20px; font-family: var(--sans); flex-shrink: 0; }
+  .pdiff-easy { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
+  .pdiff-medium { background: var(--orange-light); color: var(--orange); border: 1px solid var(--orange-border); }
+  .puzzle-desc { padding: 12px 14px 8px; font-size: 13px; color: #94a3b8; line-height: 1.65; }
+  .puzzle-expected { margin: 0 14px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; }
+  .puzzle-expected-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-family: var(--sans); margin-bottom: 5px; }
+  .puzzle-expected-val { font-family: var(--mono); font-size: 12px; color: var(--green); white-space: pre; }
+  .puzzle-editor-wrap { border-top: 1px solid var(--border); }
+  .puzzle-editor-body { display: flex; background: var(--surface); min-height: 140px; }
+  .puzzle-line-numbers { padding: 12px 10px 12px 12px; font-family: var(--mono); font-size: 13px; line-height: 1.75; color: var(--muted); text-align: right; user-select: none; background: var(--surface2); border-right: 1px solid var(--border); min-width: 38px; white-space: pre; overflow: hidden; }
+  .puzzle-code { flex: 1; min-height: 140px; padding: 12px; font-family: var(--mono); font-size: 13px; line-height: 1.75; border: none; outline: none; background: var(--surface); color: var(--text); resize: vertical; tab-size: 4; white-space: pre; overflow-wrap: normal; overflow-x: auto; }
+  .puzzle-actions { display: flex; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--border); background: var(--surface2); }
+  .check-btn { flex: 1; padding: 11px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); font-family: var(--sans); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .check-btn:active { transform: scale(0.98); }
+  .check-btn:disabled { opacity: 0.5; }
+  .hint-btn { padding: 11px 14px; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: var(--sans); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+  .reset-btn { padding: 11px 12px; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: var(--sans); font-size: 13px; cursor: pointer; }
+  .puzzle-result { margin: 0 14px 12px; padding: 11px 14px; border-radius: var(--radius-sm); font-size: 13px; font-family: var(--sans); line-height: 1.5; display: none; }
+  .puzzle-result.pass { display: block; background: var(--green-light); border: 1px solid var(--green-border); color: var(--green); }
+  .puzzle-result.fail { display: block; background: var(--red-light); border: 1px solid var(--red-border); color: var(--red); }
+  .puzzle-result.hint-show { display: block; background: var(--orange-light); border: 1px solid var(--orange-border); color: var(--orange); }
+  .solved-badge { display: none; font-size: 10px; font-weight: 700; color: var(--green); font-family: var(--sans); padding: 2px 7px; background: var(--green-light); border: 1px solid var(--green-border); border-radius: 20px; margin-left: 6px; }
+  .solved-badge.visible { display: inline-block; }
+  .all-solved { text-align: center; padding: 40px 20px; display: none; }
+  .all-solved.visible { display: block; }
+  .all-solved .trophy { font-size: 52px; margin-bottom: 12px; }
+  .all-solved h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+  .all-solved p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo">byte<span class="logo-dot">box</span></div>
+  <div class="status-pill">
+    <div class="status-dot" id="status-dot"></div>
+    <span id="status-text">ready</span>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('editor')">Editor</button>
+  <button class="tab" onclick="switchTab('snippets')">Snippets</button>
+  <button class="tab" onclick="switchTab('challenges')">Challenges</button>
+  <button class="tab" onclick="switchTab('puzzles')">🐛 Fix It</button>
+</div>
+
+<!-- ── EDITOR ── -->
+<div id="editor" class="screen active">
+  <div class="editor-wrap">
+
+    <!-- Quick-load chips -->
+    <div class="snippet-bar" id="quick-chips"></div>
+
+    <!-- Code editor -->
+    <div class="editor-card">
+      <div class="editor-topbar">
+        <span class="editor-filename">main.py</span>
+        <div class="editor-actions">
+          <button class="icon-btn" onclick="clearCode()">Clear</button>
+          <button class="icon-btn" onclick="toggleSaveArea()">Save snippet</button>
+        </div>
+      </div>
+      <div class="editor-body">
+        <div class="line-numbers" id="line-numbers">1</div>
+        <textarea class="code-area" id="code-editor" spellcheck="false" autocorrect="off" autocapitalize="off">print("Hello from bytebox!")
+</textarea>
+      </div>
+      <div class="save-snippet-area" id="save-area">
+        <input type="text" id="snippet-name" placeholder="Snippet name..." />
+        <button class="run-btn" style="width:100%;margin-top:0;" onclick="saveSnippet()">Save</button>
+      </div>
+    </div>
+
+    <!-- Run / Clear -->
+    <div class="run-bar">
+      <button class="run-btn" id="run-btn" onclick="runCode()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 2l9 5-9 5V2z" fill="white"/></svg>
+        Run Python
+      </button>
+      <button class="clear-btn" onclick="clearOutput()">Clear output</button>
+    </div>
+
+    <!-- Output -->
+    <div class="output-card output-border-default" id="output-card">
+      <div class="output-header">
+        <span class="output-label">Output</span>
+        <span class="output-time" id="output-time"></span>
+      </div>
+      <div class="output-body empty" id="output-body">Run your code to see output here.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── SNIPPETS ── -->
+<div id="snippets" class="screen">
+  <div class="list-wrap">
+    <p class="section-title">Saved snippets</p>
+    <div id="snippets-list"></div>
+  </div>
+</div>
+
+<!-- ── CHALLENGES ── -->
+<div id="challenges" class="screen">
+  <div class="list-wrap">
+    <p class="section-title">Python challenges</p>
+    <div id="challenges-list"></div>
+  </div>
+</div>
+
+<!-- ── PUZZLES ── -->
+<div id="puzzles" class="screen">
+  <div class="puzzle-wrap">
+    <div class="puzzle-progress-row">
+      <span class="puzzle-score" id="puzzle-score">0 solved</span>
+      <span class="puzzle-counter" id="puzzle-counter">0 / 10</span>
+    </div>
+    <div class="puzzle-track"><div class="puzzle-fill" id="puzzle-fill" style="width:0%"></div></div>
+    <div id="puzzles-list"></div>
+    <div class="all-solved" id="all-solved">
+      <div class="trophy">🏆</div>
+      <h3>All bugs squashed!</h3>
+      <p>You found and fixed every broken program.<br>You're thinking like a real debugger.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+
+const builtinSnippets = [
+  {
+    id: 'hello',
+    name: 'Hello World',
+    tag: 'basics',
+    tagClass: 'tag-green',
+    code: 'print("Hello, World!")\n'
+  },
+  {
+    id: 'loop',
+    name: 'For Loop',
+    tag: 'loops',
+    tagClass: 'tag-blue',
+    code: 'for i in range(1, 6):\n    print(f"Number: {i}")\n'
+  },
+  {
+    id: 'func',
+    name: 'Function',
+    tag: 'functions',
+    tagClass: 'tag-purple',
+    code: 'def greet(name):\n    return f"Hello, {name}!"\n\nprint(greet("bytebox"))\n'
+  },
+  {
+    id: 'list',
+    name: 'Lists',
+    tag: 'data',
+    tagClass: 'tag-orange',
+    code: 'fruits = ["apple", "banana", "cherry"]\n\nfor fruit in fruits:\n    print(fruit)\n\nprint(f"Total: {len(fruits)}")\n'
+  },
+  {
+    id: 'dict',
+    name: 'Dictionary',
+    tag: 'data',
+    tagClass: 'tag-orange',
+    code: 'person = {\n    "name": "Alex",\n    "age": 22,\n    "language": "Python"\n}\n\nfor key, value in person.items():\n    print(f"{key}: {value}")\n'
+  },
+  {
+    id: 'fib',
+    name: 'Fibonacci',
+    tag: 'math',
+    tagClass: 'tag-purple',
+    code: 'def fibonacci(n):\n    a, b = 0, 1\n    for _ in range(n):\n        print(a, end=" ")\n        a, b = b, a + b\n\nfibonacci(10)\nprint()\n'
+  },
+  {
+    id: 'class',
+    name: 'Class',
+    tag: 'oop',
+    tagClass: 'tag-blue',
+    code: 'class Animal:\n    def __init__(self, name, sound):\n        self.name = name\n        self.sound = sound\n\n    def speak(self):\n        return f"{self.name} says {self.sound}!"\n\ndog = Animal("Dog", "Woof")\ncat = Animal("Cat", "Meow")\n\nprint(dog.speak())\nprint(cat.speak())\n'
+  },
+  {
+    id: 'comprehension',
+    name: 'List comprehension',
+    tag: 'pythonic',
+    tagClass: 'tag-green',
+    code: 'numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\n\nevens = [n for n in numbers if n % 2 == 0]\nsquares = [n**2 for n in numbers]\n\nprint("Evens:", evens)\nprint("Squares:", squares)\n'
+  }
+];
+
+const challenges = [
+  {
+    num: '01',
+    title: 'FizzBuzz',
+    desc: 'Print numbers 1–30. For multiples of 3 print "Fizz", for multiples of 5 print "Buzz", for both print "FizzBuzz".',
+    difficulty: 'easy',
+    hint: '# Hint: use the modulo operator %\nfor i in range(1, 31):\n    # your code here\n    pass\n'
+  },
+  {
+    num: '02',
+    title: 'Reverse a string',
+    desc: 'Write a function that takes a string and returns it reversed. Test it with "bytebox".',
+    difficulty: 'easy',
+    hint: 'def reverse_string(s):\n    # your code here\n    pass\n\nprint(reverse_string("bytebox"))\n'
+  },
+  {
+    num: '03',
+    title: 'Count vowels',
+    desc: 'Write a function that counts how many vowels are in a given string.',
+    difficulty: 'easy',
+    hint: 'def count_vowels(s):\n    vowels = "aeiouAEIOU"\n    # your code here\n    pass\n\nprint(count_vowels("Hello World"))\n'
+  },
+  {
+    num: '04',
+    title: 'Palindrome checker',
+    desc: 'Write a function that returns True if a word is a palindrome (reads the same forwards and backwards).',
+    difficulty: 'medium',
+    hint: 'def is_palindrome(word):\n    # your code here\n    pass\n\nprint(is_palindrome("racecar"))\nprint(is_palindrome("hello"))\n'
+  },
+  {
+    num: '05',
+    title: 'Factorial',
+    desc: 'Write a recursive function to calculate the factorial of a number (e.g. factorial(5) = 120).',
+    difficulty: 'medium',
+    hint: 'def factorial(n):\n    # base case?\n    # recursive case?\n    pass\n\nprint(factorial(5))\nprint(factorial(10))\n'
+  },
+  {
+    num: '06',
+    title: 'Two Sum',
+    desc: 'Given a list of numbers and a target, find two numbers that add up to the target and return their indices.',
+    difficulty: 'medium',
+    hint: 'def two_sum(nums, target):\n    # your code here\n    pass\n\nprint(two_sum([2, 7, 11, 15], 9))  # [0, 1]\n'
+  },
+  {
+    num: '07',
+    title: 'Caesar cipher',
+    desc: 'Implement a Caesar cipher that shifts each letter in a string by a given number. Leave non-letters unchanged.',
+    difficulty: 'hard',
+    hint: 'def caesar(text, shift):\n    result = ""\n    for char in text:\n        # shift only letters\n        pass\n    return result\n\nprint(caesar("Hello!", 3))\n'
+  },
+  {
+    num: '08',
+    title: 'Flatten a nested list',
+    desc: 'Write a function that takes a nested list (any depth) and returns a flat list of all values.',
+    difficulty: 'hard',
+    hint: 'def flatten(lst):\n    result = []\n    for item in lst:\n        if isinstance(item, list):\n            # recurse!\n            pass\n        else:\n            result.append(item)\n    return result\n\nprint(flatten([1, [2, [3, 4]], [5, 6]]))\n'
+  }
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let userSnippets = JSON.parse(localStorage.getItem('bytebox_snippets') || '[]');
+
+// ── TABS ─────────────────────────────────────────────────────────────────────
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.classList.toggle('active', ['editor','snippets','challenges','puzzles'][i] === t);
+  });
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  document.getElementById(t).classList.add('active');
+  if (t === 'snippets') renderSnippets();
+  if (t === 'challenges') renderChallenges();
+  if (t === 'puzzles') renderPuzzles();
+}
+
+// ── LINE NUMBERS ──────────────────────────────────────────────────────────────
+function updateLineNumbers() {
+  const ta = document.getElementById('code-editor');
+  const ln = document.getElementById('line-numbers');
+  if (!ta || !ln) return;
+  const lines = ta.value.split('\n').length;
+  ln.textContent = Array.from({length: lines}, (_, i) => i + 1).join('\n');
+}
+
+// ── STATUS ────────────────────────────────────────────────────────────────────
+function setStatus(state, text) {
+  const dot = document.getElementById('status-dot');
+  const label = document.getElementById('status-text');
+  dot.className = 'status-dot' + (state !== 'ready' ? ' ' + state : '');
+  label.textContent = text;
+}
+
+// ── PYTHON SIMULATOR ─────────────────────────────────────────────────────────
+function runPython(code) {
+  const output = [];
+  const errors = [];
+
+  // Inject print capture
+  const lines = code.split('\n');
+
+  // Build a safe JS interpreter for basic Python
+  try {
+    // Transpile simple Python to JS and eval
+    const result = transpileAndRun(code);
+    return result;
+  } catch(e) {
+    return { ok: false, out: '', err: e.message };
+  }
+}
+
+function transpileAndRun(code) {
+  const printLog = [];
+  const errorLog = [];
+
+  // Safe sandbox globals
+  const _range = (a, b, step=1) => {
+    if (b === undefined) { b = a; a = 0; }
+    const r = [];
+    if (step > 0) for (let i = a; i < b; i += step) r.push(i);
+    else for (let i = a; i > b; i += step) r.push(i);
+    return r;
+  };
+  const _len = x => (x && x.length !== undefined) ? x.length : Object.keys(x).length;
+  const _str = x => {
+    if (Array.isArray(x)) return '[' + x.map(_str).join(', ') + ']';
+    if (typeof x === 'boolean') return x ? 'True' : 'False';
+    if (x === null || x === undefined) return 'None';
+    if (typeof x === 'object') {
+      return '{' + Object.entries(x).map(([k,v]) => `'${k}': ${_str(v)}`).join(', ') + '}';
+    }
+    return String(x);
+  };
+  const _int = x => parseInt(x);
+  const _float = x => parseFloat(x);
+  const _abs = Math.abs;
+  const _max = (...args) => args.length === 1 && Array.isArray(args[0]) ? Math.max(...args[0]) : Math.max(...args);
+  const _min = (...args) => args.length === 1 && Array.isArray(args[0]) ? Math.min(...args[0]) : Math.min(...args);
+  const _sum = arr => arr.reduce((a,b) => a+b, 0);
+  const _sorted = arr => [...arr].sort((a,b) => a-b);
+  const _reversed = arr => [...arr].reverse();
+  const _enumerate = (arr, start=0) => arr.map((v,i) => [i+start, v]);
+  const _zip = (...arrs) => arrs[0].map((_,i) => arrs.map(a => a[i]));
+  const _isinstance = (x, t) => {
+    if (t === 'list') return Array.isArray(x);
+    if (t === 'int') return Number.isInteger(x);
+    if (t === 'str') return typeof x === 'string';
+    if (t === 'float') return typeof x === 'number';
+    if (t === 'bool') return typeof x === 'boolean';
+    if (t === 'dict') return typeof x === 'object' && !Array.isArray(x) && x !== null;
+    return false;
+  };
+
+  let js = code;
+
+  // f-string: f"...{expr}..." → template literal
+  js = js.replace(/f"((?:[^"\\]|\\.)*)"/g, (_, inner) => {
+    const converted = inner.replace(/\{([^}]+)\}/g, (m, expr) => '${' + expr + '}');
+    return '`' + converted + '`';
+  });
+  js = js.replace(/f'((?:[^'\\]|\\.)*)'/g, (_, inner) => {
+    const converted = inner.replace(/\{([^}]+)\}/g, (m, expr) => '${' + expr + '}');
+    return '`' + converted + '`';
+  });
+
+  // Single-quoted strings → double
+  js = js.replace(/'([^']*)'/g, '"$1"');
+
+  // Python → JS keyword/syntax
+  js = js.replace(/\bTrue\b/g, 'true');
+  js = js.replace(/\bFalse\b/g, 'false');
+  js = js.replace(/\bNone\b/g, 'null');
+  js = js.replace(/\band\b/g, '&&');
+  js = js.replace(/\bor\b/g, '||');
+  js = js.replace(/\bnot\b/g, '!');
+  js = js.replace(/\*\*/g, '**');
+
+  // print(..., end=...) → handle end param
+  js = js.replace(/print\((.*?),\s*end\s*=\s*"([^"]*)"\)/g, (_, args, end) => {
+    return `printLog.push({v:_str(${args}),end:"${end}"})`;
+  });
+  js = js.replace(/print\((.*?),\s*end\s*=\s*'([^']*)'\)/g, (_, args, end) => {
+    return `printLog.push({v:_str(${args}),end:"${end}"})`;
+  });
+  // plain print
+  js = js.replace(/\bprint\(([\s\S]*?)\)/g, (_, args) => {
+    if (!args.trim()) return 'printLog.push({v:"",end:"\\n"})';
+    return `printLog.push({v:[${args}].map(_str).join(" "),end:"\\n"})`;
+  });
+
+  // isinstance(x, list) → _isinstance(x, "list")
+  js = js.replace(/isinstance\(([^,]+),\s*(\w+)\)/g, '_isinstance($1, "$2")');
+
+  // Python builtins
+  js = js.replace(/\brange\(/g, '_range(');
+  js = js.replace(/\blen\(/g, '_len(');
+  js = js.replace(/\bstr\(/g, '_str(');
+  js = js.replace(/\bint\(/g, '_int(');
+  js = js.replace(/\bfloat\(/g, '_float(');
+  js = js.replace(/\babs\(/g, '_abs(');
+  js = js.replace(/\bmax\(/g, '_max(');
+  js = js.replace(/\bmin\(/g, '_min(');
+  js = js.replace(/\bsum\(/g, '_sum(');
+  js = js.replace(/\bsorted\(/g, '_sorted(');
+  js = js.replace(/\breversed\(/g, '_reversed(');
+  js = js.replace(/\benumerate\(/g, '_enumerate(');
+  js = js.replace(/\bzip\(/g, '_zip(');
+
+  // Indentation-based block conversion
+  js = convertBlocks(js);
+
+  // Run in function scope
+  try {
+    const fn = new Function(
+      'printLog','_range','_len','_str','_int','_float','_abs','_max','_min',
+      '_sum','_sorted','_reversed','_enumerate','_zip','_isinstance',
+      '"use strict";\n' + js
+    );
+    fn(printLog,_range,_len,_str,_int,_float,_abs,_max,_min,_sum,_sorted,_reversed,_enumerate,_zip,_isinstance);
+
+    // Assemble output
+    let out = '';
+    printLog.forEach(p => { out += p.v + p.end; });
+    return { ok: true, out: out.trimEnd(), err: '' };
+  } catch(e) {
+    return { ok: false, out: '', err: e.message };
+  }
+}
+
+function convertBlocks(code) {
+  const lines = code.split('\n');
+  const result = [];
+  const indentStack = [0];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trimStart();
+    if (!trimmed || trimmed.startsWith('#')) { result.push(trimmed.startsWith('#') ? '' : ''); continue; }
+
+    const indent = line.length - trimmed.length;
+    const spaces = ' '.repeat(indent);
+
+    // Close blocks if dedented
+    while (indent < indentStack[indentStack.length - 1]) {
+      result.push(spaces + '}');
+      indentStack.pop();
+    }
+
+    // def → function
+    if (/^def\s+(\w+)\s*\((.*?)\)\s*:/.test(trimmed)) {
+      const m = trimmed.match(/^def\s+(\w+)\s*\((.*?)\)\s*:/);
+      result.push(spaces + `function ${m[1]}(${m[2]}) {`);
+      indentStack.push(indent + 1);
+    }
+    // class
+    else if (/^class\s+(\w+).*:/.test(trimmed)) {
+      const m = trimmed.match(/^class\s+(\w+)/);
+      result.push(spaces + `class ${m[1]} {`);
+      indentStack.push(indent + 1);
+    }
+    // __init__ inside class → constructor
+    else if (/^def\s+__init__\s*\(self/.test(trimmed)) {
+      const m = trimmed.match(/^def\s+__init__\s*\(self,?\s*(.*?)\)\s*:/);
+      result.push(spaces + `constructor(${m[1] || ''}) {`);
+      indentStack.push(indent + 1);
+    }
+    // self.x = y
+    else if (/^self\./.test(trimmed)) {
+      result.push(spaces + 'this.' + trimmed.replace(/^self\./, ''));
+    }
+    // for x in y
+    else if (/^for\s+(.+)\s+in\s+(.+)\s*:/.test(trimmed)) {
+      const m = trimmed.match(/^for\s+(.+)\s+in\s+(.+)\s*:/);
+      const vars = m[1].trim();
+      const iter = m[2].trim();
+      if (vars.includes(',')) {
+        result.push(spaces + `for (const [${vars}] of ${iter}) {`);
+      } else {
+        result.push(spaces + `for (const ${vars} of ${iter}) {`);
+      }
+      indentStack.push(indent + 1);
+    }
+    // while
+    else if (/^while\s+(.+)\s*:/.test(trimmed)) {
+      const m = trimmed.match(/^while\s+(.+)\s*:/);
+      result.push(spaces + `while (${m[1]}) {`);
+      indentStack.push(indent + 1);
+    }
+    // if / elif / else
+    else if (/^if\s+(.+)\s*:/.test(trimmed)) {
+      const m = trimmed.match(/^if\s+(.+)\s*:/);
+      result.push(spaces + `if (${m[1]}) {`);
+      indentStack.push(indent + 1);
+    }
+    else if (/^elif\s+(.+)\s*:/.test(trimmed)) {
+      result.pop(); // remove closing brace
+      indentStack.pop();
+      const m = trimmed.match(/^elif\s+(.+)\s*:/);
+      result.push(spaces + `} else if (${m[1]}) {`);
+      indentStack.push(indent + 1);
+    }
+    else if (/^else\s*:/.test(trimmed)) {
+      result.pop();
+      indentStack.pop();
+      result.push(spaces + '} else {');
+      indentStack.push(indent + 1);
+    }
+    // return
+    else if (/^return\b/.test(trimmed)) {
+      result.push(spaces + trimmed.replace(/^return/, 'return'));
+    }
+    // Variable: x = ... (no let/const/var)
+    else {
+      // list comprehension: [expr for x in iter if cond]
+      let conv = trimmed.replace(/\[([^\[\]]+)\s+for\s+(\w+)\s+in\s+([^\[\]]+?)(?:\s+if\s+([^\[\]]+))?\]/g,
+        (_, expr, v, iter, cond) => {
+          const filter = cond ? `.filter(${v} => ${cond})` : '';
+          return `(${iter})${filter}.map(${v} => ${expr})`;
+        });
+      result.push(spaces + conv);
+    }
+  }
+
+  // Close remaining blocks
+  while (indentStack.length > 1) {
+    result.push('}');
+    indentStack.pop();
+  }
+
+  return result.join('\n');
+}
+
+// ── RUN CODE ──────────────────────────────────────────────────────────────────
+function runCode() {
+  const code = document.getElementById('code-editor').value;
+  const btn = document.getElementById('run-btn');
+  const body = document.getElementById('output-body');
+  const card = document.getElementById('output-card');
+  const timeEl = document.getElementById('output-time');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Running...';
+  setStatus('loading', 'running');
+  body.className = 'output-body';
+  body.textContent = '';
+  card.className = 'output-card output-border-default';
+  timeEl.textContent = '';
+
+  setTimeout(() => {
+    const start = Date.now();
+    const result = runPython(code);
+    const elapsed = ((Date.now() - start) / 1000).toFixed(2);
+    timeEl.textContent = elapsed + 's';
+
+    if (!result.ok) {
+      body.className = 'output-body error-out';
+      body.textContent = 'Error: ' + result.err;
+      card.className = 'output-card output-border-error';
+      setStatus('error', 'error');
+    } else if (!result.out.trim()) {
+      body.className = 'output-body empty';
+      body.textContent = '(no output)';
+      card.className = 'output-card output-border-default';
+      setStatus('ready', 'ready');
+    } else {
+      body.className = 'output-body success-out';
+      body.textContent = result.out;
+      card.className = 'output-card output-border-success';
+      setStatus('ready', 'done');
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 2l9 5-9 5V2z" fill="white"/></svg> Run Python';
+  }, 80);
+}
+
+function clearCode() {
+  document.getElementById('code-editor').value = '';
+  document.getElementById('code-editor').focus();
+}
+
+function clearOutput() {
+  const body = document.getElementById('output-body');
+  body.className = 'output-body empty';
+  body.textContent = 'Run your code to see output here.';
+  document.getElementById('output-card').className = 'output-card output-border-default';
+  document.getElementById('output-time').textContent = '';
+  setStatus('ready', 'ready');
+}
+
+// ── SNIPPETS ──────────────────────────────────────────────────────────────────
+function loadSnippetToEditor(code) {
+  document.getElementById('code-editor').value = code;
+  switchTab('editor');
+}
+
+function renderQuickChips() {
+  const bar = document.getElementById('quick-chips');
+  bar.innerHTML = '';
+  builtinSnippets.slice(0, 5).forEach(s => {
+    const chip = document.createElement('button');
+    chip.className = 'snippet-chip';
+    chip.textContent = s.name;
+    chip.onclick = () => {
+      document.querySelectorAll('.snippet-chip').forEach(c => c.classList.remove('active-chip'));
+      chip.classList.add('active-chip');
+      loadSnippetToEditor(s.code);
+    };
+    bar.appendChild(chip);
+  });
+}
+
+function renderSnippets() {
+  const el = document.getElementById('snippets-list');
+  const all = [...builtinSnippets, ...userSnippets];
+  if (all.length === 0) {
+    el.innerHTML = '<div class="empty-state"><div class="big">📭</div>No snippets yet. Save some code from the editor!</div>';
+    return;
+  }
+  el.innerHTML = '';
+
+  if (builtinSnippets.length) {
+    const label = document.createElement('p');
+    label.className = 'section-title';
+    label.style.marginBottom = '10px';
+    label.textContent = 'Built-in';
+    el.appendChild(label);
+    builtinSnippets.forEach(s => el.appendChild(makeSnippetCard(s, false)));
+  }
+
+  if (userSnippets.length) {
+    const label = document.createElement('p');
+    label.className = 'section-title';
+    label.style.marginTop = '14px';
+    label.style.marginBottom = '10px';
+    label.textContent = 'Your snippets';
+    el.appendChild(label);
+    userSnippets.forEach(s => el.appendChild(makeSnippetCard(s, true)));
+  }
+}
+
+function makeSnippetCard(s, deletable) {
+  const card = document.createElement('div');
+  card.className = 'snippet-card';
+  const preview = s.code.split('\n').slice(0, 3).join('\n');
+  card.innerHTML = `
+    <div class="snippet-card-header">
+      <span class="snippet-card-title">${s.name}</span>
+      <span class="snippet-tag ${s.tagClass || 'tag-green'}">${s.tag || 'snippet'}</span>
+    </div>
+    <div class="snippet-preview">${escHtml(preview)}</div>
+    <button class="snippet-open-btn" onclick="loadSnippetToEditor(${JSON.stringify(s.code)})">Open in editor</button>
+    ${deletable ? `<button class="snippet-open-btn" style="color:var(--red);border-color:var(--red-border);background:var(--red-light);margin-top:0;" onclick="deleteSnippet('${s.id}')">Delete</button>` : ''}
+  `;
+  return card;
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function toggleSaveArea() {
+  const area = document.getElementById('save-area');
+  area.classList.toggle('visible');
+  if (area.classList.contains('visible')) document.getElementById('snippet-name').focus();
+}
+
+function saveSnippet() {
+  const name = document.getElementById('snippet-name').value.trim();
+  const code = document.getElementById('code-editor').value;
+  if (!name) { alert('Please enter a snippet name.'); return; }
+  const snippet = { id: 'u_' + Date.now(), name, tag: 'mine', tagClass: 'tag-blue', code };
+  userSnippets.push(snippet);
+  localStorage.setItem('bytebox_snippets', JSON.stringify(userSnippets));
+  document.getElementById('snippet-name').value = '';
+  document.getElementById('save-area').classList.remove('visible');
+  alert('Snippet saved!');
+}
+
+function deleteSnippet(id) {
+  userSnippets = userSnippets.filter(s => s.id !== id);
+  localStorage.setItem('bytebox_snippets', JSON.stringify(userSnippets));
+  renderSnippets();
+}
+
+// ── CHALLENGES ────────────────────────────────────────────────────────────────
+function renderChallenges() {
+  const el = document.getElementById('challenges-list');
+  el.innerHTML = '';
+  challenges.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'challenge-card';
+    card.innerHTML = `
+      <div class="challenge-header">
+        <div style="flex:1;">
+          <div class="challenge-num"># ${c.num}</div>
+          <div class="challenge-title">${c.title}</div>
+          <div class="challenge-desc">${c.desc}</div>
+        </div>
+      </div>
+      <div class="challenge-footer">
+        <span class="difficulty diff-${c.difficulty}">${c.difficulty}</span>
+        <button class="try-btn" onclick="loadChallenge(${challenges.indexOf(c)})">Try it →</button>
+      </div>
+    `;
+    el.appendChild(card);
+  });
+}
+
+function loadChallenge(i) {
+  document.getElementById('code-editor').value = challenges[i].hint;
+  switchTab('editor');
+}
+
+// ── PUZZLE DATA ───────────────────────────────────────────────────────────────
+const puzzles = [
+  {
+    id: 'p1',
+    title: 'Off by one',
+    difficulty: 'easy',
+    desc: 'This loop should print numbers 1 through 5, but something is off. Find and fix the bug.',
+    broken: 'for i in range(0, 5):\n    print(i)',
+    expected: '1\n2\n3\n4\n5',
+    hint: 'Check where range() starts. Should it start at 0 or 1?'
+  },
+  {
+    id: 'p2',
+    title: 'Wrong operator',
+    difficulty: 'easy',
+    desc: 'This should print "Even" for even numbers and "Odd" for odd numbers. The check is broken.',
+    broken: 'number = 4\nif number / 2 == 0:\n    print("Even")\nelse:\n    print("Odd")',
+    expected: 'Even',
+    hint: 'Division (/) gives a decimal. What operator gives the remainder?'
+  },
+  {
+    id: 'p3',
+    title: 'Missing return',
+    difficulty: 'easy',
+    desc: 'The function should return the square of a number, but it prints "None". Fix it.',
+    broken: 'def square(n):\n    result = n * n\n\nprint(square(5))',
+    expected: '25',
+    hint: 'The function calculates the result but never sends it back. What keyword is missing?'
+  },
+  {
+    id: 'p4',
+    title: 'String vs number',
+    difficulty: 'easy',
+    desc: 'This should add 10 to a number, but it crashes. Fix the type error.',
+    broken: 'age = "20"\ntotal = age + 10\nprint(total)',
+    expected: '30',
+    hint: 'age is stored as a string "20", not a number. How do you convert it?'
+  },
+  {
+    id: 'p5',
+    title: 'Infinite... not quite',
+    difficulty: 'easy',
+    desc: 'This while loop should count from 1 to 3 but never stops incrementing. Fix it so it prints 1, 2, 3.',
+    broken: 'count = 1\nwhile count <= 3:\n    print(count)',
+    expected: '1\n2\n3',
+    hint: 'The loop condition is fine, but count never changes inside the loop.'
+  },
+  {
+    id: 'p6',
+    title: 'Wrong index',
+    difficulty: 'easy',
+    desc: 'This should print the last item in the list. It crashes with an index error.',
+    broken: 'items = ["apple", "banana", "cherry"]\nprint(items[3])',
+    expected: 'cherry',
+    hint: 'A list of 3 items has indices 0, 1, 2. What is the last valid index?'
+  },
+  {
+    id: 'p7',
+    title: 'Bad condition',
+    difficulty: 'medium',
+    desc: 'This function should return True if a number is positive, False otherwise. It always returns True.',
+    broken: 'def is_positive(n):\n    if n > 0:\n        return True\n    if n <= 0:\n        return True\n\nprint(is_positive(-5))',
+    expected: 'False',
+    hint: 'Look at the second condition carefully — what should it return?'
+  },
+  {
+    id: 'p8',
+    title: 'Variable scope',
+    difficulty: 'medium',
+    desc: 'This should print the total sum of the list. It always prints 0.',
+    broken: 'numbers = [1, 2, 3, 4, 5]\nfor n in numbers:\n    total = 0\n    total = total + n\nprint(total)',
+    expected: '15',
+    hint: 'Where is "total = 0" being set? Should it be inside or outside the loop?'
+  },
+  {
+    id: 'p9',
+    title: 'String formatting',
+    difficulty: 'medium',
+    desc: 'This should print "Hello, Alice! You are 25 years old." but the f-string is broken.',
+    broken: 'name = "Alice"\nage = 25\nprint(f"Hello, {name! You are {age} years old.")',
+    expected: 'Hello, Alice! You are 25 years old.',
+    hint: 'Look at the curly braces carefully. One of them is in the wrong place.'
+  },
+  {
+    id: 'p10',
+    title: 'Logic flip',
+    difficulty: 'medium',
+    desc: 'This should print all numbers from the list that are greater than 3. It prints the wrong ones.',
+    broken: 'nums = [1, 2, 3, 4, 5, 6]\nfor n in nums:\n    if n < 3:\n        print(n)',
+    expected: '4\n5\n6',
+    hint: 'The condition is filtering the wrong direction. Should it be < or >?'
+  }
+];
+
+const puzzleSolved = {};
+
+function renderPuzzles() {
+  if (Object.keys(puzzleSolved).length === 0) updatePuzzleProgress();
+  const el = document.getElementById('puzzles-list');
+  if (el.children.length > 0) return; // already rendered, don't re-render
+  el.innerHTML = '';
+  puzzles.forEach((p, idx) => {
+    const card = document.createElement('div');
+    card.className = 'puzzle-card';
+    card.id = 'pcard-' + p.id;
+    card.innerHTML = `
+      <div class="puzzle-header">
+        <div class="puzzle-title-row">
+          <div class="puzzle-num">bug #${String(idx+1).padStart(2,'0')}</div>
+          <div class="puzzle-title">
+            ${p.title}
+            <span class="solved-badge ${puzzleSolved[p.id] ? 'visible' : ''}" id="badge-${p.id}">✓ fixed</span>
+          </div>
+        </div>
+        <span class="puzzle-diff pdiff-${p.difficulty}">${p.difficulty}</span>
+      </div>
+      <div class="puzzle-desc">${p.desc}</div>
+      <div class="puzzle-expected">
+        <div class="puzzle-expected-label">Expected output</div>
+        <div class="puzzle-expected-val">${escHtml(p.expected)}</div>
+      </div>
+      <div class="puzzle-editor-wrap">
+        <div class="puzzle-editor-body">
+          <div class="puzzle-line-numbers" id="pln-${p.id}">${p.broken.split('\n').map((_,i)=>i+1).join('\n')}</div>
+          <textarea class="puzzle-code" id="ped-${p.id}" spellcheck="false" autocorrect="off" autocapitalize="off"
+            oninput="syncPuzzleLines('${p.id}')"
+            onscroll="document.getElementById('pln-${p.id}').scrollTop=this.scrollTop"
+          >${p.broken}</textarea>
+        </div>
+      </div>
+      <div class="puzzle-result" id="pres-${p.id}"></div>
+      <div class="puzzle-actions">
+        <button class="check-btn" id="pbtn-${p.id}" onclick="checkPuzzle('${p.id}')">Check fix</button>
+        <button class="hint-btn" onclick="showPuzzleHint('${p.id}')">Hint</button>
+        <button class="reset-btn" onclick="resetPuzzle('${p.id}')">↺</button>
+      </div>
+    `;
+    el.appendChild(card);
+
+    // Tab key support
+    const ta = card.querySelector(`#ped-${p.id}`);
+    ta.addEventListener('keydown', e => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const s = ta.selectionStart, end = ta.selectionEnd;
+        ta.value = ta.value.slice(0, s) + '    ' + ta.value.slice(end);
+        ta.selectionStart = ta.selectionEnd = s + 4;
+        syncPuzzleLines(p.id);
+      }
+    });
+  });
+  updatePuzzleProgress();
+}
+
+function syncPuzzleLines(id) {
+  const ta = document.getElementById('ped-' + id);
+  const ln = document.getElementById('pln-' + id);
+  const lines = ta.value.split('\n').length;
+  ln.textContent = Array.from({length: lines}, (_, i) => i + 1).join('\n');
+}
+
+function checkPuzzle(id) {
+  const puzzle = puzzles.find(p => p.id === id);
+  const code = document.getElementById('ped-' + id).value;
+  const res = document.getElementById('pres-' + id);
+  const btn = document.getElementById('pbtn-' + id);
+
+  btn.disabled = true;
+  btn.textContent = 'Checking...';
+
+  setTimeout(() => {
+    const result = runPython(code);
+    const actual = (result.out || '').trim();
+    const expected = puzzle.expected.trim();
+
+    if (result.ok && actual === expected) {
+      res.className = 'puzzle-result pass';
+      res.textContent = '✓ Perfect! Bug squashed. Output matches exactly.';
+      btn.textContent = '✓ Solved';
+      btn.style.background = 'var(--green)';
+      puzzleSolved[id] = true;
+      document.getElementById('badge-' + id).classList.add('visible');
+      updatePuzzleProgress();
+    } else if (!result.ok) {
+      res.className = 'puzzle-result fail';
+      res.textContent = '✗ Your code has an error: ' + result.err;
+      btn.disabled = false;
+      btn.textContent = 'Check fix';
+    } else {
+      res.className = 'puzzle-result fail';
+      res.innerHTML = `✗ Not quite. Got: <span style="font-family:var(--mono)">${escHtml(actual || '(no output)')}</span> — expected: <span style="font-family:var(--mono)">${escHtml(expected)}</span>`;
+      btn.disabled = false;
+      btn.textContent = 'Check fix';
+    }
+  }, 80);
+}
+
+function showPuzzleHint(id) {
+  const puzzle = puzzles.find(p => p.id === id);
+  const res = document.getElementById('pres-' + id);
+  res.className = 'puzzle-result hint-show';
+  res.textContent = '💡 ' + puzzle.hint;
+}
+
+function resetPuzzle(id) {
+  const puzzle = puzzles.find(p => p.id === id);
+  const ta = document.getElementById('ped-' + id);
+  ta.value = puzzle.broken;
+  syncPuzzleLines(id);
+  const res = document.getElementById('pres-' + id);
+  res.className = 'puzzle-result';
+  res.textContent = '';
+  if (!puzzleSolved[id]) {
+    const btn = document.getElementById('pbtn-' + id);
+    btn.disabled = false;
+    btn.textContent = 'Check fix';
+    btn.style.background = '';
+  }
+}
+
+function updatePuzzleProgress() {
+  const solved = Object.keys(puzzleSolved).length;
+  const total = puzzles.length;
+  document.getElementById('puzzle-score').textContent = solved + ' solved';
+  document.getElementById('puzzle-counter').textContent = solved + ' / ' + total;
+  document.getElementById('puzzle-fill').style.width = Math.round((solved / total) * 100) + '%';
+  if (solved === total) {
+    document.getElementById('all-solved').classList.add('visible');
+  }
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+renderQuickChips();
+renderChallenges();
+// Line numbers init after DOM is ready
+window.addEventListener('load', () => {
+  const ta = document.getElementById('code-editor');
+  if (ta) {
+    updateLineNumbers();
+    ta.addEventListener('input', updateLineNumbers);
+    ta.addEventListener('scroll', () => {
+      document.getElementById('line-numbers').scrollTop = ta.scrollTop;
+    });
+    ta.addEventListener('keydown', e => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const s = ta.selectionStart, end = ta.selectionEnd;
+        ta.value = ta.value.slice(0, s) + '    ' + ta.value.slice(end);
+        ta.selectionStart = ta.selectionEnd = s + 4;
+        updateLineNumbers();
+      }
+    });
+  }
+});
+</script>
+</body>
+</html>
