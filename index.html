@@ -798,51 +798,46 @@ function setStatus(state, text) {
 
 // ── PYTHON SIMULATOR ─────────────────────────────────────────────────────────
 function runPython(code) {
-  const output = [];
-  const errors = [];
-
-  // Inject print capture
-  const lines = code.split('\n');
-
-  // Build a safe JS interpreter for basic Python
   try {
-    // Transpile simple Python to JS and eval
-    const result = transpileAndRun(code);
-    return result;
+    return transpileAndRun(code);
   } catch(e) {
     return { ok: false, out: '', err: e.message };
   }
 }
 
-function transpileAndRun(code) {
+function transpileAndRun(rawCode) {
   const printLog = [];
-  const errorLog = [];
 
-  // Safe sandbox globals
-  const _range = (a, b, step=1) => {
+  // ── stdlib helpers ────────────────────────────────────────────────────────
+  const _range = (a, b, step) => {
     if (b === undefined) { b = a; a = 0; }
+    if (step === undefined) step = 1;
     const r = [];
-    if (step > 0) for (let i = a; i < b; i += step) r.push(i);
-    else for (let i = a; i > b; i += step) r.push(i);
+    if (step > 0) { for (let i = a; i < b; i += step) r.push(i); }
+    else { for (let i = a; i > b; i += step) r.push(i); }
     return r;
   };
-  const _len = x => (x && x.length !== undefined) ? x.length : Object.keys(x).length;
-  const _str = x => {
-    if (Array.isArray(x)) return '[' + x.map(_str).join(', ') + ']';
-    if (typeof x === 'boolean') return x ? 'True' : 'False';
+  const _len = x => Array.isArray(x) ? x.length : (typeof x === 'string' ? x.length : Object.keys(x).length);
+  const _repr = x => {
     if (x === null || x === undefined) return 'None';
-    if (typeof x === 'object') {
-      return '{' + Object.entries(x).map(([k,v]) => `'${k}': ${_str(v)}`).join(', ') + '}';
-    }
+    if (typeof x === 'boolean') return x ? 'True' : 'False';
+    if (typeof x === 'string') return x;
+    if (Array.isArray(x)) return '[' + x.map(_repr).join(', ') + ']';
+    if (typeof x === 'object') return '{' + Object.entries(x).map(([k,v]) => `'${k}': ${_repr(v)}`).join(', ') + '}';
     return String(x);
   };
   const _int = x => parseInt(x);
   const _float = x => parseFloat(x);
-  const _abs = Math.abs;
-  const _max = (...args) => args.length === 1 && Array.isArray(args[0]) ? Math.max(...args[0]) : Math.max(...args);
-  const _min = (...args) => args.length === 1 && Array.isArray(args[0]) ? Math.min(...args[0]) : Math.min(...args);
-  const _sum = arr => arr.reduce((a,b) => a+b, 0);
-  const _sorted = arr => [...arr].sort((a,b) => a-b);
+  const _bool = x => !!x;
+  const _list = x => Array.isArray(x) ? [...x] : [...x];
+  const _abs = x => Math.abs(x);
+  const _max = (...a) => a.length === 1 && Array.isArray(a[0]) ? Math.max(...a[0]) : Math.max(...a);
+  const _min = (...a) => a.length === 1 && Array.isArray(a[0]) ? Math.min(...a[0]) : Math.min(...a);
+  const _sum = (arr, start=0) => arr.reduce((a,b) => a+b, start);
+  const _sorted = (arr, reverse=false) => {
+    const s = [...arr].sort((a,b) => typeof a === 'string' ? a.localeCompare(b) : a-b);
+    return reverse ? s.reverse() : s;
+  };
   const _reversed = arr => [...arr].reverse();
   const _enumerate = (arr, start=0) => arr.map((v,i) => [i+start, v]);
   const _zip = (...arrs) => arrs[0].map((_,i) => arrs.map(a => a[i]));
@@ -850,82 +845,169 @@ function transpileAndRun(code) {
     if (t === 'list') return Array.isArray(x);
     if (t === 'int') return Number.isInteger(x);
     if (t === 'str') return typeof x === 'string';
-    if (t === 'float') return typeof x === 'number';
+    if (t === 'float') return typeof x === 'number' && !Number.isInteger(x);
     if (t === 'bool') return typeof x === 'boolean';
     if (t === 'dict') return typeof x === 'object' && !Array.isArray(x) && x !== null;
     return false;
   };
+  const _input = () => '';
+  const _print = (...args) => { printLog.push(args.map(_repr).join(' ')); };
 
-  let js = code;
+  // ── step 1: strip comments ────────────────────────────────────────────────
+  let code = rawCode.split('\n').map(line => {
+    // remove inline # comments but not inside strings
+    let inStr = false, strChar = '';
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (!inStr && (c === '"' || c === "'")) { inStr = true; strChar = c; }
+      else if (inStr && c === strChar && line[i-1] !== '\\') { inStr = false; }
+      else if (!inStr && c === '#') { line = line.slice(0, i); break; }
+    }
+    return line;
+  }).join('\n');
 
-  // f-string: f"...{expr}..." → template literal
-  js = js.replace(/f"((?:[^"\\]|\\.)*)"/g, (_, inner) => {
-    const converted = inner.replace(/\{([^}]+)\}/g, (m, expr) => '${' + expr + '}');
-    return '`' + converted + '`';
-  });
-  js = js.replace(/f'((?:[^'\\]|\\.)*)'/g, (_, inner) => {
-    const converted = inner.replace(/\{([^}]+)\}/g, (m, expr) => '${' + expr + '}');
-    return '`' + converted + '`';
-  });
-
-  // Single-quoted strings → double
-  js = js.replace(/'([^']*)'/g, '"$1"');
-
-  // Python → JS keyword/syntax
-  js = js.replace(/\bTrue\b/g, 'true');
-  js = js.replace(/\bFalse\b/g, 'false');
-  js = js.replace(/\bNone\b/g, 'null');
-  js = js.replace(/\band\b/g, '&&');
-  js = js.replace(/\bor\b/g, '||');
-  js = js.replace(/\bnot\b/g, '!');
-  js = js.replace(/\*\*/g, '**');
-
-  // print(..., end=...) → handle end param
-  js = js.replace(/print\((.*?),\s*end\s*=\s*"([^"]*)"\)/g, (_, args, end) => {
-    return `printLog.push({v:_str(${args}),end:"${end}"})`;
-  });
-  js = js.replace(/print\((.*?),\s*end\s*=\s*'([^']*)'\)/g, (_, args, end) => {
-    return `printLog.push({v:_str(${args}),end:"${end}"})`;
-  });
-  // plain print
-  js = js.replace(/\bprint\(([\s\S]*?)\)/g, (_, args) => {
-    if (!args.trim()) return 'printLog.push({v:"",end:"\\n"})';
-    return `printLog.push({v:[${args}].map(_str).join(" "),end:"\\n"})`;
+  // ── step 2: protect string literals ──────────────────────────────────────
+  // Extract all string literals and replace with placeholders so regex
+  // transforms below don't accidentally mangle them.
+  const strings = [];
+  code = code.replace(/(f?"""[\s\S]*?"""|f?'''[\s\S]*?'''|f?"(?:[^"\\]|\\.)*"|f?'(?:[^'\\]|\\.)*')/g, match => {
+    const idx = strings.length;
+    strings.push(match);
+    return `__STR${idx}__`;
   });
 
-  // isinstance(x, list) → _isinstance(x, "list")
-  js = js.replace(/isinstance\(([^,]+),\s*(\w+)\)/g, '_isinstance($1, "$2")');
+  // ── step 3: keyword substitutions (safe – strings are protected) ──────────
+  code = code.replace(/\bTrue\b/g, 'true');
+  code = code.replace(/\bFalse\b/g, 'false');
+  code = code.replace(/\bNone\b/g, 'null');
+  code = code.replace(/\band\b/g, '&&');
+  code = code.replace(/\bor\b/g, '||');
+  code = code.replace(/\bnot\s+/g, '!');
+  code = code.replace(/\bpass\b/g, '/* pass */');
+  code = code.replace(/\belse\s*:\s*pass\b/g, '');
 
-  // Python builtins
-  js = js.replace(/\brange\(/g, '_range(');
-  js = js.replace(/\blen\(/g, '_len(');
-  js = js.replace(/\bstr\(/g, '_str(');
-  js = js.replace(/\bint\(/g, '_int(');
-  js = js.replace(/\bfloat\(/g, '_float(');
-  js = js.replace(/\babs\(/g, '_abs(');
-  js = js.replace(/\bmax\(/g, '_max(');
-  js = js.replace(/\bmin\(/g, '_min(');
-  js = js.replace(/\bsum\(/g, '_sum(');
-  js = js.replace(/\bsorted\(/g, '_sorted(');
-  js = js.replace(/\breversed\(/g, '_reversed(');
-  js = js.replace(/\benumerate\(/g, '_enumerate(');
-  js = js.replace(/\bzip\(/g, '_zip(');
+  // ── step 4: method/builtin mappings ──────────────────────────────────────
+  code = code.replace(/\.items\(\)/g, '.__items()');
+  code = code.replace(/\.keys\(\)/g, '.__keys()');
+  code = code.replace(/\.values\(\)/g, '.__values()');
+  code = code.replace(/\.append\(([^)]+)\)/g, '.push($1)');
+  code = code.replace(/\.extend\(([^)]+)\)/g, '.__extend($1)');
+  code = code.replace(/\.pop\(\)/g, '.pop()');
+  code = code.replace(/\.upper\(\)/g, '.toUpperCase()');
+  code = code.replace(/\.lower\(\)/g, '.toLowerCase()');
+  code = code.replace(/\.strip\(\)/g, '.trim()');
+  code = code.replace(/\.split\(([^)]*)\)/g, '.split($1)');
+  code = code.replace(/\.join\(([^)]+)\)/g, '.__join($1)');
+  code = code.replace(/\.replace\(([^)]+)\)/g, '.replace($1)');
+  code = code.replace(/\.startswith\(([^)]+)\)/g, '.startsWith($1)');
+  code = code.replace(/\.endswith\(([^)]+)\)/g, '.endsWith($1)');
+  code = code.replace(/\.isdigit\(\)/g, '.__isdigit()');
+  code = code.replace(/\.isalpha\(\)/g, '.__isalpha()');
+  code = code.replace(/\.count\(([^)]+)\)/g, '.__count($1)');
+  code = code.replace(/\.index\(([^)]+)\)/g, '.indexOf($1)');
+  code = code.replace(/\.sort\(\)/g, '.sort((a,b)=>typeof a==="string"?a.localeCompare(b):a-b)');
+  code = code.replace(/\bisinstance\s*\(([^,]+),\s*(\w+)\)/g, '_isinstance($1, "$2")');
+  code = code.replace(/\brange\s*\(/g, '_range(');
+  code = code.replace(/\blen\s*\(/g, '_len(');
+  code = code.replace(/\bstr\s*\(/g, '_repr(');
+  code = code.replace(/\bint\s*\(/g, '_int(');
+  code = code.replace(/\bfloat\s*\(/g, '_float(');
+  code = code.replace(/\bbool\s*\(/g, '_bool(');
+  code = code.replace(/\babs\s*\(/g, '_abs(');
+  code = code.replace(/\bmax\s*\(/g, '_max(');
+  code = code.replace(/\bmin\s*\(/g, '_min(');
+  code = code.replace(/\bsum\s*\(/g, '_sum(');
+  code = code.replace(/\bsorted\s*\(/g, '_sorted(');
+  code = code.replace(/\breversed\s*\(/g, '_reversed(');
+  code = code.replace(/\benumerate\s*\(/g, '_enumerate(');
+  code = code.replace(/\bzip\s*\(/g, '_zip(');
+  code = code.replace(/\blist\s*\(/g, '_list(');
+  code = code.replace(/\binput\s*\(/g, '_input(');
 
-  // Indentation-based block conversion
-  js = convertBlocks(js);
+  // ── step 5: restore strings and convert them ──────────────────────────────
+  code = code.replace(/__STR(\d+)__/g, (_, i) => {
+    let s = strings[+i];
+    // f-string → template literal
+    if (s.startsWith('f"') || s.startsWith("f'")) {
+      const inner = s.slice(2, -1);
+      const tl = inner.replace(/\{([^}]+)\}/g, '${$1}');
+      return '`' + tl + '`';
+    }
+    // triple-quoted → regular string (collapse newlines)
+    if (s.startsWith('"""') || s.startsWith("'''")) {
+      const inner = s.slice(3, -3).replace(/`/g, '\\`');
+      return '`' + inner + '`';
+    }
+    // single-quoted → double-quoted
+    if (s.startsWith("'")) {
+      return '"' + s.slice(1, -1).replace(/"/g, '\\"') + '"';
+    }
+    return s;
+  });
 
-  // Run in function scope
+  // ── step 6: print() handling ──────────────────────────────────────────────
+  // Must handle: print(), print("x"), print("x", y), print(..., end="")
+  // Do this AFTER string restore so we see real content
+  code = code.replace(/\bprint\s*\(([^]*?)\)(?=\s*(?:\n|$|;))/gm, (match, inner) => {
+    inner = inner.trim();
+    // check for end= keyword
+    const endMatch = inner.match(/,\s*end\s*=\s*(`[^`]*`|"[^"]*"|'[^']*')\s*$/);
+    if (endMatch) {
+      const endVal = endMatch[1];
+      const args = inner.slice(0, inner.lastIndexOf(',end') < 0 ? inner.lastIndexOf(', end') : inner.lastIndexOf(',end')).trim();
+      // remove end= from args properly
+      const cleanArgs = inner.replace(/,\s*end\s*=\s*(`[^`]*`|"[^"]*"|'[^']*')\s*$/, '').trim();
+      return `printLog.push({v: [${cleanArgs || '""'}].map(_repr).join(" "), end: ${endVal}})`;
+    }
+    if (!inner) return 'printLog.push({v:"", end:"\\n"})';
+    return `printLog.push({v: [${inner}].map(_repr).join(" "), end:"\\n"})`;
+  });
+
+  // ── step 7: list comprehension ────────────────────────────────────────────
+  code = code.replace(/\[([^\[\]]+)\s+for\s+(\w+)\s+in\s+([^\[\]]+?)(?:\s+if\s+([^\[\]]+?))?\s*\]/g,
+    (_, expr, v, iter, cond) => {
+      const arr = `Array.from(${iter})`;
+      const filtered = cond ? `${arr}.filter(${v} => ${cond})` : arr;
+      return `${filtered}.map(${v} => ${expr})`;
+    });
+
+  // ── step 8: self → this ───────────────────────────────────────────────────
+  code = code.replace(/\bself\b/g, 'this');
+
+  // ── step 9: indentation → braces ─────────────────────────────────────────
+  code = convertBlocks(code);
+
+  // ── step 10: build and run ────────────────────────────────────────────────
+  // Inject prototype helpers for dict methods
+  const prologue = `
+    Object.defineProperty(Object.prototype, '__items', { value: function(){ return Object.entries(this); }, configurable: true, writable: true });
+    Object.defineProperty(Object.prototype, '__keys', { value: function(){ return Object.keys(this); }, configurable: true, writable: true });
+    Object.defineProperty(Object.prototype, '__values', { value: function(){ return Object.values(this); }, configurable: true, writable: true });
+    Object.defineProperty(Array.prototype, '__extend', { value: function(a){ a.forEach(x => this.push(x)); }, configurable: true, writable: true });
+    Object.defineProperty(Array.prototype, '__join', { value: function(sep){ return this.join(sep); }, configurable: true, writable: true });
+    Object.defineProperty(String.prototype, '__join', { value: function(arr){ return arr.join(this); }, configurable: true, writable: true });
+    Object.defineProperty(String.prototype, '__isdigit', { value: function(){ return /^\\d+$/.test(this); }, configurable: true, writable: true });
+    Object.defineProperty(String.prototype, '__isalpha', { value: function(){ return /^[a-zA-Z]+$/.test(this); }, configurable: true, writable: true });
+    Object.defineProperty(String.prototype, '__count', { value: function(sub){ return this.split(sub).length - 1; }, configurable: true, writable: true });
+    Object.defineProperty(Array.prototype, '__count', { value: function(v){ return this.filter(x => x===v).length; }, configurable: true, writable: true });
+  `;
+
   try {
     const fn = new Function(
-      'printLog','_range','_len','_str','_int','_float','_abs','_max','_min',
-      '_sum','_sorted','_reversed','_enumerate','_zip','_isinstance',
-      '"use strict";\n' + js
+      'printLog','_range','_len','_repr','_int','_float','_bool','_list',
+      '_abs','_max','_min','_sum','_sorted','_reversed','_enumerate',
+      '_zip','_isinstance','_input',
+      prologue + '\n"use strict";\n' + code
     );
-    fn(printLog,_range,_len,_str,_int,_float,_abs,_max,_min,_sum,_sorted,_reversed,_enumerate,_zip,_isinstance);
+    fn(printLog,_range,_len,_repr,_int,_float,_bool,_list,
+       _abs,_max,_min,_sum,_sorted,_reversed,_enumerate,
+       _zip,_isinstance,_input);
 
-    // Assemble output
     let out = '';
-    printLog.forEach(p => { out += p.v + p.end; });
+    printLog.forEach(p => {
+      if (typeof p === 'string') { out += p + '\n'; }
+      else { out += p.v + p.end; }
+    });
     return { ok: true, out: out.trimEnd(), err: '' };
   } catch(e) {
     return { ok: false, out: '', err: e.message };
@@ -934,105 +1016,127 @@ function transpileAndRun(code) {
 
 function convertBlocks(code) {
   const lines = code.split('\n');
-  const result = [];
+  const out = [];
   const indentStack = [0];
+  const declaredVars = new Set(['true','false','null','undefined','printLog']);
 
-  for (let i = 0; i < lines.length; i++) {
+  let i = 0;
+  while (i < lines.length) {
     const line = lines[i];
     const trimmed = line.trimStart();
-    if (!trimmed || trimmed.startsWith('#')) { result.push(trimmed.startsWith('#') ? '' : ''); continue; }
+    i++;
+
+    if (!trimmed) { out.push(''); continue; }
 
     const indent = line.length - trimmed.length;
-    const spaces = ' '.repeat(indent);
 
-    // Close blocks if dedented
-    while (indent < indentStack[indentStack.length - 1]) {
-      result.push(spaces + '}');
+    // Close blocks for dedent
+    while (indentStack.length > 1 && indent < indentStack[indentStack.length - 1]) {
+      out.push(' '.repeat(Math.max(0, indentStack[indentStack.length - 2])) + '}');
       indentStack.pop();
     }
 
-    // def → function
-    if (/^def\s+(\w+)\s*\((.*?)\)\s*:/.test(trimmed)) {
-      const m = trimmed.match(/^def\s+(\w+)\s*\((.*?)\)\s*:/);
-      result.push(spaces + `function ${m[1]}(${m[2]}) {`);
+    const sp = ' '.repeat(indent);
+
+    // def __init__
+    if (/^def\s+__init__\s*\(/.test(trimmed)) {
+      const m = trimmed.match(/^def\s+__init__\s*\(this,?\s*(.*?)\)\s*:/);
+      const params = m ? m[1].trim() : '';
+      out.push(sp + `constructor(${params}) {`);
       indentStack.push(indent + 1);
+    }
+    // def (any other function/method)
+    else if (/^def\s+\w+\s*\(/.test(trimmed)) {
+      const m = trimmed.match(/^def\s+(\w+)\s*\((.*?)\)\s*:/);
+      if (m) {
+        const params = m[2].replace(/^\s*this,?\s*/, '').trim();
+        declaredVars.add(m[1]);
+        out.push(sp + `function ${m[1]}(${params}) {`);
+        indentStack.push(indent + 1);
+      } else out.push(sp + trimmed);
     }
     // class
-    else if (/^class\s+(\w+).*:/.test(trimmed)) {
+    else if (/^class\s+\w+/.test(trimmed)) {
       const m = trimmed.match(/^class\s+(\w+)/);
-      result.push(spaces + `class ${m[1]} {`);
+      declaredVars.add(m[1]);
+      out.push(sp + `class ${m[1]} {`);
       indentStack.push(indent + 1);
     }
-    // __init__ inside class → constructor
-    else if (/^def\s+__init__\s*\(self/.test(trimmed)) {
-      const m = trimmed.match(/^def\s+__init__\s*\(self,?\s*(.*?)\)\s*:/);
-      result.push(spaces + `constructor(${m[1] || ''}) {`);
-      indentStack.push(indent + 1);
-    }
-    // self.x = y
-    else if (/^self\./.test(trimmed)) {
-      result.push(spaces + 'this.' + trimmed.replace(/^self\./, ''));
-    }
-    // for x in y
-    else if (/^for\s+(.+)\s+in\s+(.+)\s*:/.test(trimmed)) {
-      const m = trimmed.match(/^for\s+(.+)\s+in\s+(.+)\s*:/);
-      const vars = m[1].trim();
-      const iter = m[2].trim();
-      if (vars.includes(',')) {
-        result.push(spaces + `for (const [${vars}] of ${iter}) {`);
-      } else {
-        result.push(spaces + `for (const ${vars} of ${iter}) {`);
-      }
-      indentStack.push(indent + 1);
+    // for
+    else if (/^for\s+.+\s+in\s+.+\s*:/.test(trimmed)) {
+      const m = trimmed.match(/^for\s+(.+?)\s+in\s+(.+?)\s*:/);
+      if (m) {
+        const vars = m[1].trim();
+        const iter = m[2].trim();
+        vars.split(',').map(v => v.trim().replace(/[\[\]]/g,'')).forEach(v => declaredVars.add(v));
+        if (vars.includes(',')) {
+          out.push(sp + `for (const [${vars}] of Array.from(${iter})) {`);
+        } else {
+          out.push(sp + `for (const ${vars} of Array.from(${iter})) {`);
+        }
+        indentStack.push(indent + 1);
+      } else out.push(sp + trimmed);
     }
     // while
-    else if (/^while\s+(.+)\s*:/.test(trimmed)) {
-      const m = trimmed.match(/^while\s+(.+)\s*:/);
-      result.push(spaces + `while (${m[1]}) {`);
+    else if (/^while\s+.+\s*:/.test(trimmed)) {
+      const m = trimmed.match(/^while\s+(.+?)\s*:/);
+      const guardVar = `__guard${Math.floor(Math.random()*99999)}`;
+      out.push(sp + `let ${guardVar} = 0;`);
+      out.push(sp + `while (${m[1]}) { if (++${guardVar} > 10000) { throw new Error("Infinite loop detected — check your loop condition"); }`);
       indentStack.push(indent + 1);
     }
-    // if / elif / else
-    else if (/^if\s+(.+)\s*:/.test(trimmed)) {
-      const m = trimmed.match(/^if\s+(.+)\s*:/);
-      result.push(spaces + `if (${m[1]}) {`);
+    // if
+    else if (/^if\s+.+\s*:/.test(trimmed)) {
+      const m = trimmed.match(/^if\s+(.+?)\s*:/);
+      out.push(sp + `if (${m[1]}) {`);
       indentStack.push(indent + 1);
     }
-    else if (/^elif\s+(.+)\s*:/.test(trimmed)) {
-      result.pop(); // remove closing brace
-      indentStack.pop();
-      const m = trimmed.match(/^elif\s+(.+)\s*:/);
-      result.push(spaces + `} else if (${m[1]}) {`);
+    // elif
+    else if (/^elif\s+.+\s*:/.test(trimmed)) {
+      if (out.length) out.pop();
+      if (indentStack.length > 1) indentStack.pop();
+      const m = trimmed.match(/^elif\s+(.+?)\s*:/);
+      out.push(sp + `} else if (${m[1]}) {`);
       indentStack.push(indent + 1);
     }
+    // else
     else if (/^else\s*:/.test(trimmed)) {
-      result.pop();
-      indentStack.pop();
-      result.push(spaces + '} else {');
+      if (out.length) out.pop();
+      if (indentStack.length > 1) indentStack.pop();
+      out.push(sp + '} else {');
       indentStack.push(indent + 1);
     }
     // return
     else if (/^return\b/.test(trimmed)) {
-      result.push(spaces + trimmed.replace(/^return/, 'return'));
+      out.push(sp + trimmed);
     }
-    // Variable: x = ... (no let/const/var)
+    // this.x = ... (was self.x)
+    else if (/^this\./.test(trimmed)) {
+      out.push(sp + trimmed);
+    }
+    // plain assignment: varname = value
+    else if (/^[a-zA-Z_]\w*\s*=(?!=)/.test(trimmed)) {
+      const varName = trimmed.match(/^([a-zA-Z_]\w*)\s*=/)[1];
+      if (declaredVars.has(varName)) {
+        out.push(sp + trimmed);
+      } else {
+        declaredVars.add(varName);
+        out.push(sp + 'let ' + trimmed);
+      }
+    }
+    // everything else (function calls, compound ops +=, etc.)
     else {
-      // list comprehension: [expr for x in iter if cond]
-      let conv = trimmed.replace(/\[([^\[\]]+)\s+for\s+(\w+)\s+in\s+([^\[\]]+?)(?:\s+if\s+([^\[\]]+))?\]/g,
-        (_, expr, v, iter, cond) => {
-          const filter = cond ? `.filter(${v} => ${cond})` : '';
-          return `(${iter})${filter}.map(${v} => ${expr})`;
-        });
-      result.push(spaces + conv);
+      out.push(sp + trimmed);
     }
   }
 
-  // Close remaining blocks
+  // close remaining open blocks
   while (indentStack.length > 1) {
-    result.push('}');
+    out.push(' '.repeat(Math.max(0, indentStack[indentStack.length - 2])) + '}');
     indentStack.pop();
   }
 
-  return result.join('\n');
+  return out.join('\n');
 }
 
 // ── RUN CODE ──────────────────────────────────────────────────────────────────
@@ -1096,7 +1200,17 @@ function clearOutput() {
 // ── SNIPPETS ──────────────────────────────────────────────────────────────────
 function loadSnippetToEditor(code) {
   document.getElementById('code-editor').value = code;
+  updateLineNumbers();
   switchTab('editor');
+}
+
+// Store snippet code by ID so onclick can reference by ID safely
+const snippetStore = {};
+builtinSnippets.forEach(s => { snippetStore[s.id] = s.code; });
+
+function loadSnippetById(id) {
+  const code = snippetStore[id] || '';
+  loadSnippetToEditor(code);
 }
 
 function renderQuickChips() {
@@ -1109,7 +1223,7 @@ function renderQuickChips() {
     chip.onclick = () => {
       document.querySelectorAll('.snippet-chip').forEach(c => c.classList.remove('active-chip'));
       chip.classList.add('active-chip');
-      loadSnippetToEditor(s.code);
+      loadSnippetById(s.id);
     };
     bar.appendChild(chip);
   });
@@ -1148,13 +1262,15 @@ function makeSnippetCard(s, deletable) {
   const card = document.createElement('div');
   card.className = 'snippet-card';
   const preview = s.code.split('\n').slice(0, 3).join('\n');
+  // Store code in the map so it's safely accessible by ID
+  snippetStore[s.id] = s.code;
   card.innerHTML = `
     <div class="snippet-card-header">
       <span class="snippet-card-title">${s.name}</span>
       <span class="snippet-tag ${s.tagClass || 'tag-green'}">${s.tag || 'snippet'}</span>
     </div>
     <div class="snippet-preview">${escHtml(preview)}</div>
-    <button class="snippet-open-btn" onclick="loadSnippetToEditor(${JSON.stringify(s.code)})">Open in editor</button>
+    <button class="snippet-open-btn" onclick="loadSnippetById('${s.id}')">Open in editor</button>
     ${deletable ? `<button class="snippet-open-btn" style="color:var(--red);border-color:var(--red-border);background:var(--red-light);margin-top:0;" onclick="deleteSnippet('${s.id}')">Delete</button>` : ''}
   `;
   return card;
@@ -1257,12 +1373,12 @@ const puzzles = [
   },
   {
     id: 'p5',
-    title: 'Infinite... not quite',
+    title: 'Loop gone wrong',
     difficulty: 'easy',
-    desc: 'This while loop should count from 1 to 3 but never stops incrementing. Fix it so it prints 1, 2, 3.',
-    broken: 'count = 1\nwhile count <= 3:\n    print(count)',
+    desc: 'This while loop should count from 1 to 3 and print each number. It prints nothing at all. Fix it.',
+    broken: 'count = 1\nwhile count > 3:\n    print(count)\n    count = count + 1',
     expected: '1\n2\n3',
-    hint: 'The loop condition is fine, but count never changes inside the loop.'
+    hint: 'The loop condition checks if count is greater than 3. Should it be > or <?'
   },
   {
     id: 'p6',
