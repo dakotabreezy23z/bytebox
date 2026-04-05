@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>bytebox</title>
-<link rel="apple-touch-icon" sizes="180x180" href="btyeboximg.jpg">
-<link rel="icon" type="image/png" sizes="32x32" href="btyeboximg.jpg">
-<link rel="icon" type="image/png" sizes="16x16" href="btyeboximg.jpg">
+<link rel="apple-touch-icon" sizes="180x180" href="byteboximg.jpg">
+<link rel="icon" type="image/png" sizes="32x32" href="byteboximg.jpg">
+<link rel="icon" type="image/png" sizes="16x16" href="byteboximg.jpg">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -45,7 +45,7 @@
     color: var(--text);
     font-family: var(--sans);
     min-height: 100vh;
-    font-size: 19px;
+    font-size: 18px;
   }
 
   /* ── HEADER ── */
@@ -62,7 +62,7 @@
   }
   .logo {
     font-family: var(--mono);
-    font-size: 21px;
+    font-size: 23px;
     font-weight: 500;
     color: var(--text);
     letter-spacing: -0.5px;
@@ -143,7 +143,7 @@
   .snippet-bar::-webkit-scrollbar { display: none; }
   .snippet-chip {
     flex-shrink: 0;
-    font-size: 16px;
+    font-size: 18px;
     font-family: var(--sans);
     font-weight: 500;
     padding: 5px 12px;
@@ -179,7 +179,7 @@
   }
   .editor-filename {
     font-family: var(--mono);
-    font-size: 16px;
+    font-size: 18px;
     color: var(--muted);
   }
   .editor-actions { display: flex; gap: 6px; }
@@ -188,7 +188,7 @@
     border-radius: var(--radius-sm);
     border: 1px solid var(--border);
     background: var(--surface);
-    font-size: 16px;
+    font-size: 18px;
     color: var(--muted);
     cursor: pointer;
     font-family: var(--sans);
@@ -205,7 +205,7 @@
   .line-numbers {
     padding: 14px 10px 14px 12px;
     font-family: var(--mono);
-    font-size: 13.5px;
+    font-size: 16px;
     line-height: 1.75;
     color: var(--muted);
     text-align: right;
@@ -221,7 +221,7 @@
     min-height: 220px;
     padding: 14px 14px 14px 12px;
     font-family: var(--mono);
-    font-size: 13.5px;
+    font-size: 16px;
     line-height: 1.75;
     border: none;
     outline: none;
@@ -267,7 +267,7 @@
     border: 1px solid var(--border);
     border-radius: var(--radius);
     font-family: var(--sans);
-    font-size: 17px;
+    font-size: 23px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
@@ -290,7 +290,7 @@
     background: var(--surface2);
   }
   .output-label {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 600;
     color: var(--muted);
     text-transform: uppercase;
@@ -298,7 +298,7 @@
     font-family: var(--sans);
   }
   .output-time {
-    font-size: 14px;
+    font-size: 23px;
     color: var(--muted);
     font-family: var(--mono);
   }
@@ -348,12 +348,12 @@
     border-bottom: 1px solid var(--border);
   }
   .snippet-card-title {
-    font-size: 17px;
+    font-size: 23px;
     font-weight: 600;
     color: var(--text);
   }
   .snippet-tag {
-    font-size: 13px;
+    font-size: 16px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -368,7 +368,7 @@
   .snippet-preview {
     padding: 10px 14px;
     font-family: var(--mono);
-    font-size: 14px;
+    font-size: 18px;
     color: var(--muted);
     line-height: 1.6;
     background: var(--surface2);
@@ -408,7 +408,7 @@
   }
   .challenge-num {
     font-family: var(--mono);
-    font-size: 14px;
+    font-size: 23px;
     color: var(--muted);
     margin-bottom: 4px;
   }
@@ -432,7 +432,7 @@
     background: var(--surface2);
   }
   .difficulty {
-    font-size: 13px;
+    font-size: 23px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -447,7 +447,7 @@
     color: #fff;
     border: none;
     border-radius: var(--radius-sm);
-    font-size: 13px;
+    font-size: 16px;
     font-weight: 600;
     font-family: var(--sans);
     cursor: pointer;
@@ -472,10 +472,10 @@
     text-align: center;
     padding: 40px 20px;
     color: var(--muted);
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1.7;
   }
-  .empty-state .big { font-size: 36px; margin-bottom: 10px; }
+  .empty-state .big { font-size: 42px; margin-bottom: 10px; }
 
   input[type="text"] {
     width: 100%;
@@ -483,7 +483,7 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     font-family: var(--sans);
-    font-size: 14px;
+    font-size: 23px;
     background: var(--surface);
     color: var(--text);
     outline: none;
@@ -507,50 +507,50 @@
     justify-content: space-between;
     margin-bottom: 6px;
   }
-  .puzzle-score { font-size: 13px; font-weight: 600; color: var(--green); font-family: var(--sans); }
-  .puzzle-counter { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+  .puzzle-score { font-size: 16px; font-weight: 600; color: var(--green); font-family: var(--sans); }
+  .puzzle-counter { font-size: 18px; color: var(--muted); font-family: var(--mono); }
   .puzzle-track { height: 3px; background: var(--border); border-radius: 2px; margin-bottom: 16px; overflow: hidden; }
   .puzzle-fill { height: 100%; background: linear-gradient(90deg, var(--green), var(--accent)); border-radius: 2px; transition: width 0.4s ease; }
   .puzzle-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; }
   .puzzle-header { padding: 12px 14px; border-bottom: 1px solid var(--border); background: var(--surface2); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
   .puzzle-title-row { flex: 1; }
-  .puzzle-num { font-size: 10px; font-family: var(--mono); color: var(--muted); margin-bottom: 3px; }
-  .puzzle-title { font-size: 15px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
-  .puzzle-diff { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; padding: 3px 9px; border-radius: 20px; font-family: var(--sans); flex-shrink: 0; }
+  .puzzle-num { font-size: 16px; font-family: var(--mono); color: var(--muted); margin-bottom: 3px; }
+  .puzzle-title { font-size: 18px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .puzzle-diff { font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; padding: 3px 9px; border-radius: 20px; font-family: var(--sans); flex-shrink: 0; }
   .pdiff-easy { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
   .pdiff-medium { background: var(--orange-light); color: var(--orange); border: 1px solid var(--orange-border); }
-  .puzzle-desc { padding: 12px 14px 8px; font-size: 13px; color: #94a3b8; line-height: 1.65; }
+  .puzzle-desc { padding: 12px 14px 8px; font-size: 16px; color: #94a3b8; line-height: 1.65; }
   .puzzle-expected { margin: 0 14px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; }
-  .puzzle-expected-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-family: var(--sans); margin-bottom: 5px; }
-  .puzzle-expected-val { font-family: var(--mono); font-size: 12px; color: var(--green); white-space: pre; }
+  .puzzle-expected-label { font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-family: var(--sans); margin-bottom: 5px; }
+  .puzzle-expected-val { font-family: var(--mono); font-size: 18px; color: var(--green); white-space: pre; }
   .puzzle-editor-wrap { border-top: 1px solid var(--border); }
   .puzzle-editor-body { display: flex; background: var(--surface); min-height: 140px; }
-  .puzzle-line-numbers { padding: 12px 10px 12px 12px; font-family: var(--mono); font-size: 13px; line-height: 1.75; color: var(--muted); text-align: right; user-select: none; background: var(--surface2); border-right: 1px solid var(--border); min-width: 38px; white-space: pre; overflow: hidden; }
-  .puzzle-code { flex: 1; min-height: 140px; padding: 12px; font-family: var(--mono); font-size: 13px; line-height: 1.75; border: none; outline: none; background: var(--surface); color: var(--text); resize: vertical; tab-size: 4; white-space: pre; overflow-wrap: normal; overflow-x: auto; }
+  .puzzle-line-numbers { padding: 12px 10px 12px 12px; font-family: var(--mono); font-size: 16px; line-height: 1.75; color: var(--muted); text-align: right; user-select: none; background: var(--surface2); border-right: 1px solid var(--border); min-width: 38px; white-space: pre; overflow: hidden; }
+  .puzzle-code { flex: 1; min-height: 140px; padding: 12px; font-family: var(--mono); font-size: 16px; line-height: 1.75; border: none; outline: none; background: var(--surface); color: var(--text); resize: vertical; tab-size: 4; white-space: pre; overflow-wrap: normal; overflow-x: auto; }
   .puzzle-actions { display: flex; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--border); background: var(--surface2); }
-  .check-btn { flex: 1; padding: 11px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); font-family: var(--sans); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .check-btn { flex: 1; padding: 11px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); font-family: var(--sans); font-size: 17px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
   .check-btn:active { transform: scale(0.98); }
   .check-btn:disabled { opacity: 0.5; }
-  .hint-btn { padding: 11px 14px; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: var(--sans); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
-  .reset-btn { padding: 11px 12px; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: var(--sans); font-size: 13px; cursor: pointer; }
-  .puzzle-result { margin: 0 14px 12px; padding: 11px 14px; border-radius: var(--radius-sm); font-size: 13px; font-family: var(--sans); line-height: 1.5; display: none; }
+  .hint-btn { padding: 11px 14px; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: var(--sans); font-size: 16px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+  .reset-btn { padding: 11px 12px; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: var(--sans); font-size: 16px; cursor: pointer; }
+  .puzzle-result { margin: 0 14px 12px; padding: 11px 14px; border-radius: var(--radius-sm); font-size: 16px; font-family: var(--sans); line-height: 1.5; display: none; }
   .puzzle-result.pass { display: block; background: var(--green-light); border: 1px solid var(--green-border); color: var(--green); }
   .puzzle-result.fail { display: block; background: var(--red-light); border: 1px solid var(--red-border); color: var(--red); }
   .puzzle-result.hint-show { display: block; background: var(--orange-light); border: 1px solid var(--orange-border); color: var(--orange); }
-  .solved-badge { display: none; font-size: 10px; font-weight: 700; color: var(--green); font-family: var(--sans); padding: 2px 7px; background: var(--green-light); border: 1px solid var(--green-border); border-radius: 20px; margin-left: 6px; }
+  .solved-badge { display: none; font-size: 16px; font-weight: 700; color: var(--green); font-family: var(--sans); padding: 2px 7px; background: var(--green-light); border: 1px solid var(--green-border); border-radius: 20px; margin-left: 6px; }
   .solved-badge.visible { display: inline-block; }
   .all-solved { text-align: center; padding: 40px 20px; display: none; }
   .all-solved.visible { display: block; }
-  .all-solved .trophy { font-size: 52px; margin-bottom: 12px; }
-  .all-solved h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
-  .all-solved p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+  .all-solved .trophy { font-size: 58px; margin-bottom: 12px; }
+  .all-solved h3 { font-size: 23px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+  .all-solved p { font-size: 17px; color: var(--muted); line-height: 1.6; }
 </style>
 </head>
 <body>
 
 <!-- HEADER -->
 <div class="header">
-  <div class="logo">byte<span class="logo-dot">box</span></div>
+  <div class="logo"><img src="byteboximg.png" alt="bytebox" style="height:32px; width:32px; object-fit:contain; border-radius:8px; vertical-align:middle; margin-right:8px;">byte<span class="logo-dot">box</span></div>
   <div class="status-pill">
     <div class="status-dot" id="status-dot"></div>
     <span id="status-text">ready</span>
